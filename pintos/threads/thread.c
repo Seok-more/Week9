@@ -40,6 +40,10 @@ static struct lock tid_lock;
 /* Thread destruction requests */
 static struct list destruction_req;
 
+// sleep_list 선언
+ static struct list sleep_list;
+
+
 /* Statistics. */
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
@@ -109,6 +113,8 @@ thread_init (void) {
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&destruction_req);
+	list_init (&sleep_list);
+
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -216,12 +222,14 @@ thread_create (const char *name, int priority,
    This function must be called with interrupts turned off.  It
    is usually a better idea to use one of the synchronization
    primitives in synch.h. */
-void
-thread_block (void) {
-	ASSERT (!intr_context ());
-	ASSERT (intr_get_level () == INTR_OFF);
-	thread_current ()->status = THREAD_BLOCKED;
-	schedule ();
+
+// 현재 진행중인 쓰레드를 블록으로 변경하고 슼케줄러에서 제외,
+void thread_block (void) 
+{
+	ASSERT (!intr_context ()); // 인터럽트 컨텍스트에서 호출하면 안됨을 보장
+	ASSERT (intr_get_level () == INTR_OFF); // 함수 실행 전에 인터럽트가 꺼져있어야함을 보장
+	thread_current ()->status = THREAD_BLOCKED; // 현재 실행중인 쓰레드의 상태를 블록으로함 
+	schedule (); // 스케줄러를 호출해서 다음에 실행할 쓰레드를 결정해서 전환함(레디상태인애)
 }
 
 /* Transitions a blocked thread T to the ready-to-run state.
@@ -292,8 +300,10 @@ thread_exit (void) {
 	NOT_REACHED ();
 }
 
-/* Yields the CPU.  The current thread is not put to sleep and
-   may be scheduled again immediately at the scheduler's whim. */
+// 현재 실행 중인 스레드를 READY 리스트에 넣고
+// 스케줄러를 호출해 다른 스레드를 실행하도록 CPU를 양보하는 함수예요.
+// **문맥 전환(Context Switch)**을 유발하는 대표적인 함수입니다.
+
 void
 thread_yield (void) {
 	struct thread *curr = thread_current ();
@@ -307,6 +317,89 @@ thread_yield (void) {
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
+
+// sleep상태인 쓰레드를 sleep_list에 넣음
+// 스레드 구조체에 일어날 시각(ticks) 저장
+// 슬립리스트에서 ticks가 작은 쓰레드 부터 넣도록 정렬까지 -> 추가함수 필요함
+// 현재 쓰레드 슬립으로 -> block 호출
+// 일반 커널 컨텍스트에서만 호출. 인터럽트 핸들러에서는 부르지마셈
+void thread_sleep(int64_t ticks)
+{
+	ASSERT(!intr_context()); // 인터럽트 핸들러에서 부르면 오류
+
+	struct thread *now;
+
+	enum intr_level level_saved;
+	level_saved = intr_disable(); // 인터럽트 해제 -> Race Condition 막아서 sleep_list에 안전접근 
+
+	now = thread_current();     // 현재 스레드
+	ASSERT(now != idle_thread); // idle thread는 절대 sleep하면 안됨 (스케줄러 동작을 위해 항상 필요함)
+
+	now->ticks_awake = ticks;  // 현재 쓰레드가 깨야하는 시간을 구조체에 저장
+
+	list_insert_ordered(&sleep_list, &now->elem, sort_thread_ticks, NULL); // sleep_list에 추가(빨리 끝나는 애부터 정렬식으로)
+	
+	// printf("[AlarmClock] thread_sleep: %s will sleep until tick %lld\n", now->name, ticks);
+
+	// 현재 스레드를 BLOCKED 상태로 바꿔 스케줄러에서 제외시킴 ->  timer interrupt에서 깨울 때까지 잠
+	thread_block(); // 현재 스레드 재우기
+
+	intr_set_level(level_saved); // 인터럽트 상태를 원래 상태로 변경
+}
+
+// 슬립리스트안에서 빨리 깨는 쓰레드는 앞으로 정렬
+bool sort_thread_ticks(struct list_elem *a, struct list_elem *b)
+{
+	// 리스트에서 꺼낸 값이 구조체의 멤버 -> 그 값으로는 원래 구조체의 다른 멤버에 접근 불가능
+	// list_entry 매크로를 통해 전체 구조체의 포인터로 반환하면 다른 멤버에 접근 가능
+	struct thread *thread_a = list_entry(a, struct thread, elem);
+	struct thread *thread_b = list_entry(b, struct thread, elem);
+	
+	if (thread_a->ticks_awake == thread_b->ticks_awake)
+	{
+		return thread_a->tid < thread_b->tid; // ticks가 같으면 tid 값으로 정렬
+	}  
+	
+	return thread_a->ticks_awake < thread_b->ticks_awake;
+}
+
+
+// 슬립리스트안의 쓰레드들이 일어날 시간이 되면 레디 리스트로 옮김
+// 지금 틱보다 작거나 같은 ticks_awake을 가진 쓰레드 모두 슬립리스트에서 제거 -> 레디리스트에 삽입
+// 인터럽트 컨텍스트에서만 호출됨. 일반 커널 코드에서 부르면 안 됨.
+void thread_awake(int64_t ticks)
+{
+	ASSERT(intr_context()); // 인터럽트 핸들러가 아니면 오류
+
+    enum intr_level level_saved = intr_disable();
+
+    struct list_elem *now_elem = list_begin(&sleep_list);
+    struct list_elem *next_elem;
+
+    // 리스트를 순회하며 깰 애는 바로 깨워버림
+    while (now_elem != list_end(&sleep_list))
+    {
+		// 지금 검사중인 elem이 속한 쓰레드 구조체
+        struct thread *curr_thread = list_entry(now_elem, struct thread, elem);
+        if (ticks >= curr_thread->ticks_awake) 
+		{
+            // 다음 요소 미리 저장
+            next_elem = list_next(now_elem);
+
+            list_remove(now_elem);         // sleep_list에서 제거
+            thread_unblock(curr_thread);    // ready_list로 이동
+
+            now_elem = next_elem;   
+        } 
+		else 
+		{
+            break; // 더 이상 깰 쓰레드 없음
+        }
+    }
+
+    intr_set_level(level_saved); // 인터럽트 복귀
+}
+
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void

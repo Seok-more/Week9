@@ -237,6 +237,7 @@ struct list_elem *e = list_pop_front (&list);
 ...do something with e...
 }
 */
+// 삭제한 다음 요소 반환
 struct list_elem *
 list_remove (struct list_elem *elem) {
 	ASSERT (is_interior (elem));
@@ -377,8 +378,9 @@ inplace_merge (struct list_elem *a0, struct list_elem *a1b0,
 /* Sorts LIST according to LESS given auxiliary data AUX, using a
    natural iterative merge sort that runs in O(n lg n) time and
    O(1) space in the number of elements in LIST. */
-void
-list_sort (struct list *list, list_less_func *less, void *aux) {
+
+// 리스트의 모든 요소를 주어진 비교 함수(less)에 따라 정렬(오름차순/내림차순) 해줌.
+void list_sort (struct list *list, list_less_func *less, void *aux) {
 	size_t output_run_cnt;        /* Number of runs output in current pass. */
 
 	ASSERT (list != NULL);
@@ -415,8 +417,15 @@ list_sort (struct list *list, list_less_func *less, void *aux) {
 /* Inserts ELEM in the proper position in LIST, which must be
    sorted according to LESS given auxiliary data AUX.
    Runs in O(n) average case in the number of elements in LIST. */
-void
-list_insert_ordered (struct list *list, struct list_elem *elem,
+
+// ELEM: 리스트에 삽입하려는 요소(구조체 등)
+// LIST: 요소들이 저장되어 있는 리스트(연결리스트)
+// LESS: 두 요소를 비교하는 함수(예: 오름차순/내림차순)
+// AUX: 비교 함수에 전달되는 추가 데이터(보조 데이터)
+// O(n): 리스트의 길이에 비례해 걸리는 시간(평균적으로 한 번 리스트를 끝까지 순회)
+
+// 주어진 비교 함수(less)에 따라 리스트의 적절한 위치에 요소를 삽입함.
+   void list_insert_ordered (struct list *list, struct list_elem *elem,
 		list_less_func *less, void *aux) {
 	struct list_elem *e;
 
@@ -434,9 +443,9 @@ list_insert_ordered (struct list *list, struct list_elem *elem,
    set of adjacent elements that are equal according to LESS
    given auxiliary data AUX.  If DUPLICATES is non-null, then the
    elements from LIST are appended to DUPLICATES. */
-void
-list_unique (struct list *list, struct list *duplicates,
-		list_less_func *less, void *aux) {
+// 리스트에서 같은 값(비교 함수 기준)이 연속으로 있을 때 중복을 제거함.
+void list_unique (struct list *list, struct list *duplicates,
+	list_less_func *less, void *aux) {
 	struct list_elem *elem, *next;
 
 	ASSERT (list != NULL);
