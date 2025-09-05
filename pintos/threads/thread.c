@@ -454,14 +454,12 @@ void thread_swap_prior(void)
 	struct thread *now = thread_current();
 	struct thread *ready = list_entry(list_front(&ready_list),struct thread, elem);
 
-	printf("[PS_basic] thread_swap_prior: now(%s, priority=%d, tid=%d), ready(%s, priority=%d, tid=%d)\n",
-		now->name, now->priority, now->tid,
-		ready->name, ready->priority, ready->tid);
+	//printf("[PS_basic] thread_swap_prior: now(%s, priority=%d, tid=%d), ready(%s, priority=%d, tid=%d)\n",now->name, now->priority, now->tid,ready->name, ready->priority, ready->tid);
 
 
 	if (now->priority < ready->priority)
 	{
-		printf("[PS_basic] thread_swap_prior: now->priority < ready->priority, yielding...\n");
+		//printf("[PS_basic] thread_swap_prior: now->priority < ready->priority, yielding...\n");
 
 		// Error
 		// thread_awake()는 timer interrupt에서 실행됨 → 즉, 인터럽트 컨텍스트에서 실행됨
