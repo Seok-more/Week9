@@ -352,8 +352,8 @@ void thread_sleep(int64_t ticks)
 
 	struct thread *now;
 
-	enum intr_level level_saved;
-	level_saved = intr_disable(); // 인터럽트 해제 -> Race Condition 막아서 sleep_list에 안전접근 
+	enum intr_level old_level;
+	old_level = intr_disable(); // 인터럽트 해제 -> Race Condition 막아서 sleep_list에 안전접근 
 
 	now = thread_current();     // 현재 스레드
 	ASSERT(now != idle_thread); // idle thread는 절대 sleep하면 안됨 (스케줄러 동작을 위해 항상 필요함)
@@ -367,7 +367,7 @@ void thread_sleep(int64_t ticks)
 	// 현재 스레드를 BLOCKED 상태로 바꿔 스케줄러에서 제외시킴 ->  timer interrupt에서 깨울 때까지 잠
 	thread_block(); // 현재 스레드 재우기
 
-	intr_set_level(level_saved); // 인터럽트 상태를 원래 상태로 변경
+	intr_set_level(old_level); // 인터럽트 상태를 원래 상태로 변경
 }
 
 // 슬립리스트안에서 빨리 깨는 쓰레드는 앞으로 정렬
@@ -396,7 +396,7 @@ void thread_awake(int64_t ticks)
 {
 	ASSERT(intr_context()); // 인터럽트 핸들러가 아니면 오류
 
-    enum intr_level level_saved = intr_disable();
+    enum intr_level old_level = intr_disable();
 
     struct list_elem *now_elem = list_begin(&sleep_list);
     struct list_elem *next_elem;
@@ -423,7 +423,7 @@ void thread_awake(int64_t ticks)
         }
     }
 
-    intr_set_level(level_saved); // 인터럽트 복귀
+    intr_set_level(old_level); // 인터럽트 복귀
 }
 
 

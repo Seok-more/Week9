@@ -4,6 +4,8 @@ The manual is available at https://casys-kaist.github.io/pintos-kaist/.
 
 ---
 
+pintos -- -q run alarm-multiple
+
 ## **얼마나 많은 코드를 작성해야 하나요?**
 - 참고 솔루션에서 `git diff --stat`로 계산한 결과:
     - **총 330줄 추가, 12줄 삭제**
