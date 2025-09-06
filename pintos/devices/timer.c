@@ -87,6 +87,7 @@ timer_elapsed (int64_t then) {
 	return timer_ticks () - then;
 }
 
+// timer : 하드웨어 타이머 칩을 제어해서 주기적으로 인터럽트를 발생시킴
 // 여기 수정
 // 쓰레드를 ticks만큼 중지시킴
 void timer_sleep (int64_t ticks) 

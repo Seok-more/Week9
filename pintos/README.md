@@ -167,54 +167,7 @@ make tests/threads/priority-sema.result
 
 lib/kernel 쪽에 데이터 구조 등등있더라
 
-(alarm-single) end
-Execution of 'alarm-single' complete.
-Timer: 284 ticks
-Thread: 250 idle ticks, 34 kernel ticks, 0 user ticks
-Console: 1028 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
-(alarm-multiple) end
-Execution of 'alarm-multiple' complete.
-Timer: 580 ticks
-Thread: 550 idle ticks, 30 kernel ticks, 0 user ticks
-Console: 2996 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
-(alarm-simultaneous) end
-Execution of 'alarm-simultaneous' complete.
-Timer: 282 ticks
-Thread: 250 idle ticks, 33 kernel ticks, 0 user ticks
-Console: 1656 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
-(alarm-priority) end
-Execution of 'alarm-priority' complete.
-Timer: 523 ticks
-Thread: 490 idle ticks, 33 kernel ticks, 0 user ticks
-Console: 881 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
-(alarm-zero) end
-Execution of 'alarm-zero' complete.
-Timer: 33 ticks
-Thread: 1 idle ticks, 32 kernel ticks, 0 user ticks
-Console: 426 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
-(alarm-negative) end
-Execution of 'alarm-negative' complete.
-Timer: 23 ticks
-Thread: 1 idle ticks, 22 kernel ticks, 0 user ticks
-Console: 450 characters output
-Keyboard: 0 keys pressed
-Powering off...
-
+# Alarm Clock 구현
 Translation of call stack:
 pass tests/threads/alarm-single
 pass tests/threads/alarm-multiple
@@ -249,7 +202,7 @@ make[1]: Leaving directory '/workspaces/pintos_22.04_lab_docker/pintos/threads/b
 make: *** [../Makefile.kernel:10: check] Error 2
 
 
-#priority 기본 추가
+# priority 기본 추가
 Translation of call stack:
 pass tests/threads/alarm-single
 pass tests/threads/alarm-multiple
@@ -283,7 +236,7 @@ make[1]: *** [../../tests/Make.tests:29: check] Error 1
 make[1]: Leaving directory '/workspaces/pintos_22.04_lab_docker/pintos/threads/build'
 make: *** [../Makefile.kernel:10: check] Error 2
 
-#priority + sema/condvar fix
+# priority + sema/condvar fix
 pass tests/threads/alarm-single
 pass tests/threads/alarm-multiple
 pass tests/threads/alarm-simultaneous
@@ -312,3 +265,41 @@ FAIL tests/threads/mlfqs/mlfqs-nice-2
 FAIL tests/threads/mlfqs/mlfqs-nice-10
 FAIL tests/threads/mlfqs/mlfqs-block
 14 of 27 tests failed.
+
+# 기본적인 단일 PD 추가
+pass tests/threads/alarm-single
+pass tests/threads/alarm-multiple
+pass tests/threads/alarm-simultaneous
+pass tests/threads/alarm-priority
+pass tests/threads/alarm-zero
+pass tests/threads/alarm-negative
+pass tests/threads/priority-change
+pass tests/threads/priority-donate-one
+FAIL tests/threads/priority-donate-multiple
+pass tests/threads/priority-donate-multiple2
+FAIL tests/threads/priority-donate-nest
+FAIL tests/threads/priority-donate-sema
+FAIL tests/threads/priority-donate-lower
+FAIL tests/threads/priority-fifo
+pass tests/threads/priority-preempt
+FAIL tests/threads/priority-sema
+FAIL tests/threads/priority-condvar
+FAIL tests/threads/priority-donate-chain
+FAIL tests/threads/mlfqs/mlfqs-load-1
+FAIL tests/threads/mlfqs/mlfqs-load-60
+FAIL tests/threads/mlfqs/mlfqs-load-avg
+FAIL tests/threads/mlfqs/mlfqs-recent-1
+pass tests/threads/mlfqs/mlfqs-fair-2
+pass tests/threads/mlfqs/mlfqs-fair-20
+FAIL tests/threads/mlfqs/mlfqs-nice-2
+FAIL tests/threads/mlfqs/mlfqs-nice-10
+FAIL tests/threads/mlfqs/mlfqs-block
+15 of 27 tests failed.
+make: *** [../../tests/Make.tests:29: check] Error 1
+-> 
+추가 pass:
+priority-donate-one, priority-donate-multiple2
+추가 fail:
+priority-fifo, 
+priority-sema,
+priority-condvar 

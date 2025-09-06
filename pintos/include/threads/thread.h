@@ -92,11 +92,16 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 
+	/* Shared between thread.c and synch.c. */
+	// 리스트의 노드 역할 -> 갈고리같은거임 list가  ll로 되어있으니까 여기에다가 앞뒤로 줄매세요
+	struct list_elem elem;              /* List element. */
+
 	// 여기 추가
 	int64_t ticks_awake; // 일어날 시간 
-
-	/* Shared between thread.c and synch.c. */
-	struct list_elem elem;              /* List element. */
+	int priority_original; // 원래 우선순위
+	struct list lst_donation; // 이 쓰레드에게 기부 해준 쓰레드들 저장
+	struct list_elem lst_donation_elem; // 기부자들 노드
+	struct lock *lock_donated_for_waiting;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -111,6 +116,8 @@ struct thread {
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
 };
+
+
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.

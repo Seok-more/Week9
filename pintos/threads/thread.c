@@ -355,7 +355,7 @@ void thread_sleep(int64_t ticks)
 	enum intr_level old_level;
 	old_level = intr_disable(); // 인터럽트 해제 -> Race Condition 막아서 sleep_list에 안전접근 
 
-	now = thread_current();     // 현재 스레드
+	struct thread *now = thread_current(); 
 	ASSERT(now != idle_thread); // idle thread는 절대 sleep하면 안됨 (스케줄러 동작을 위해 항상 필요함)
 
 	now->ticks_awake = ticks;  // 현재 쓰레드가 깨야하는 시간을 구조체에 저장
@@ -566,8 +566,10 @@ kernel_thread (thread_func *function, void *aux) {
 
 /* Does basic initialization of T as a blocked thread named
    NAME. */
+// 새 쓰레드 구조체 초기화 -> 새로운 쓰레드 객체 만든다고 보면됨
 static void
-init_thread (struct thread *t, const char *name, int priority) {
+init_thread (struct thread *t, const char *name, int priority) 
+{
 	ASSERT (t != NULL);
 	ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
 	ASSERT (name != NULL);
@@ -578,6 +580,10 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	// 여기추가
+	t->priority_original = priority;
+	list_init(&t->lst_donation);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

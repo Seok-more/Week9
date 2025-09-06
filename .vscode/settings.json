@@ -3,6 +3,7 @@
         "thread.h": "c",
         "timer.h": "c",
         "random": "c",
-        "synch.h": "c"
+        "synch.h": "c",
+        "numbers": "c"
     }
 }

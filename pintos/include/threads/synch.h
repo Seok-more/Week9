@@ -28,13 +28,21 @@ bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
+
+/* One semaphore in a list. */
+struct semaphore_elem {
+	struct list_elem elem;              /* List element. */
+	struct semaphore semaphore;         /* This semaphore. */
+};
+
+
 /* Condition variable. */
 // 어떤 "조건"이 만족될 때까지 스레드가 잠깐 잠드는 동기화 도구
 // 직접 락 제어를 하는게 아니라 세마포어를 통해 쓰레드를 깨우는 역할만 함
 // 결국 waiter 리스트의 정렬 기준에 따라 세마포어_elem들이 들어감
 // 세마포어의 waiters안에는 쓰레드가
-// 조건변수의 waiters안에는 세마포어들이 들어가는건가
-
+// 조건변수의 waiters안에는 쓰레드가 있지만,  semaphore_elem이라는 구조체 형태(세마포어와 리스트 요소를 포함)로써 접근함
+// 실제로는 그 세마포어에 걸린 쓰레드가 하나씩 깨움
 struct condition {
 	struct list waiters;        /* List of waiting threads. */
 };
@@ -46,6 +54,7 @@ void cond_broadcast (struct condition *, struct lock *);
 
 // 여기추가
 bool sort_sema_priority(struct list_elem *a, struct list_elem *b);
+bool sort_donation_priority(struct list_elem *a, struct list_elem *b);
 
 /* Optimization barrier.
  *

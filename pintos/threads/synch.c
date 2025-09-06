@@ -212,14 +212,28 @@ lock_init (struct lock *lock) {
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
-void
-lock_acquire (struct lock *lock) {
+// 락을 획득(lock acquire)하는 함수
+// 즉, 여러 스레드가 공유 자원을 사용할 때
+// 한 번에 하나의 스레드만 접근하도록 하는 "상호배제(Mutual Exclusion)"를 보장합니다.
+void lock_acquire (struct lock *lock) 
+{
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
+	struct thread *now = thread_current();
+	
+	if (lock->holder && lock->holder->priority < now->priority)
+	{
+		// 일단 임시
+		lock->holder->priority = now->priority;
+
+		now->lock_donated_for_waiting = lock;
+		list_insert_ordered(&lock->holder->lst_donation, &now->lst_donation_elem, sort_donation_priority,NULL);
+		
+	}
 	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
+	lock->holder = now;
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -248,9 +262,35 @@ lock_try_acquire (struct lock *lock) {
    make sense to try to release a lock within an interrupt
    handler. */
 void
-lock_release (struct lock *lock) {
+lock_release (struct lock *lock) 
+{
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+
+	struct thread *now = thread_current();
+
+	// 일단 임시
+	struct list_elem *it = list_begin(&now->lst_donation);
+
+    while (it != list_end(&now->lst_donation)) 
+	{
+        struct thread *donor = list_entry(it, struct thread, lst_donation_elem);
+        if (donor->lock_donated_for_waiting == lock) 
+		{
+            // 삭제 후 lock_donated_for_waiting 초기화
+            it = list_remove(it);
+            donor->lock_donated_for_waiting = NULL;
+        } 
+		else
+		{
+            it = list_next(it);
+        }
+    }
+
+    if (list_empty(&now->lst_donation))
+    {
+		now->priority = now->priority_original;
+	}
 
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
@@ -266,11 +306,7 @@ lock_held_by_current_thread (const struct lock *lock) {
 	return lock->holder == thread_current ();
 }
 
-/* One semaphore in a list. */
-struct semaphore_elem {
-	struct list_elem elem;              /* List element. */
-	struct semaphore semaphore;         /* This semaphore. */
-};
+
 
 /* Initializes condition variable COND.  A condition variable
    allows one piece of code to signal a condition and cooperating
@@ -404,4 +440,13 @@ bool sort_sema_priority(struct list_elem *a, struct list_elem *b)
 	return thread_a->priority > thread_b->priority;
 
 	
+}
+
+bool sort_donation_priority(struct list_elem *a, struct list_elem *b)
+{
+	struct thread *thread_a = list_entry(a, struct thread,lst_donation_elem);
+	struct thread *thread_b = list_entry(b, struct thread,lst_donation_elem);
+
+	return thread_a->priority > thread_b->priority;
+
 }
