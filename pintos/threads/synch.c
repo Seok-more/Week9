@@ -135,9 +135,10 @@ void sema_up (struct semaphore *sema)
 	if (!list_empty (&sema->waiters))
 	{
 
-		// struct thread *t = list_entry (list_front (&sema->waiters),struct thread, elem);
-		// printf("[sema_up] Unblock thread: %s (priority: %d)\n", t->name, t->priority);
 		list_sort(&sema->waiters, sort_thread_priority, NULL);
+		// struct thread *t = list_entry(list_front(&sema->waiters), struct thread, elem);
+        // printf("[sema_up] Unblock thread: %s (priority: %d)\n", t->name, t->priority);
+      
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),struct thread, elem));
 	}
 	
@@ -234,7 +235,9 @@ void lock_acquire (struct lock *lock)
 	}
 	sema_down (&lock->semaphore);
 	now->lock_donated_for_waiting = NULL;
-	lock->holder = now;
+
+	// 바꼈을수 있음
+	lock->holder = thread_current();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -363,7 +366,21 @@ void cond_wait (struct condition *cond, struct lock *lock)
 	// Error!
 	// semaphore_elem을 컨디션의 waiters에 넣을때, semaphore_elem의 waiter 리스트에 아직 thread들이 없음 -> empty 계속나오더라
 	// 이 시점에 현재 thread를 waiter.semaphore.waiters에 미리 넣어줘야 함
-	list_push_back(&waiter.semaphore.waiters, &thread_current()->elem);
+
+	// 	추가 설명: 왜 이전 버전은 실패했나?
+	// 이전에는 cond_wait에서
+	// list_push_back(&waiter.semaphore.waiters, &thread_current()->elem);
+	// → 직접 thread를 semaphore_elem의 내부 waiters에 넣었음
+	// → sema_down에서 또 들어가서 waiters에 thread가 중복되어 버그 발생
+	// → 깨우는 thread가 여러 번 들어가거나 pop이 꼬임
+
+	// 지금은
+	// cond_wait에서 waiters에 직접 넣지 않음
+	// sema_down에서만 waiters에 넣어서
+	// 실제 block/unblock되는 thread가 정확히 관리됨
+
+	// 퇴물
+	// list_push_back(&waiter.semaphore.waiters, &thread_current()->elem);
 	list_insert_ordered(&cond->waiters,&waiter.elem,sort_sema_priority, NULL);
 	
 	// printf("[cond_wait] cond->waiters: ");
@@ -496,10 +513,11 @@ void update_priority(struct thread *now)
 {
 	if (list_empty(&now->lst_donation))
 	{
-		now->priority = now->priority_original;
-		return;
+		now->priority = now->priority_original; // 기부 없으면 바로 복구
 	}
-
-	// 정렬된 리스트 맨 앞에 있는 우선순위로 갱신함
-	now->priority = list_entry(list_front(&now->lst_donation), struct thread, lst_donation_elem)->priority;
+	else
+	{
+		// donation 리스트 정렬이 최신이도록
+		now->priority = list_entry(list_front(&now->lst_donation), struct thread, lst_donation_elem)->priority;
+	}
 }

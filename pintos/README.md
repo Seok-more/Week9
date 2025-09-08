@@ -340,3 +340,67 @@ priority-donate-nest,
 priority-donate-sema가 추가로 통과
 
 priority-change가 실패함
+
+# thread_set_priority에선 오리지널을 바꿔야함
+pass tests/threads/alarm-single
+pass tests/threads/alarm-multiple
+pass tests/threads/alarm-simultaneous
+pass tests/threads/alarm-priority
+pass tests/threads/alarm-zero
+pass tests/threads/alarm-negative
+pass tests/threads/priority-change
+pass tests/threads/priority-donate-one
+pass tests/threads/priority-donate-multiple
+pass tests/threads/priority-donate-multiple2
+pass tests/threads/priority-donate-nest
+pass tests/threads/priority-donate-sema
+pass tests/threads/priority-donate-lower
+pass tests/threads/priority-fifo
+pass tests/threads/priority-preempt
+pass tests/threads/priority-sema
+FAIL tests/threads/priority-condvar
+pass tests/threads/priority-donate-chain
+FAIL tests/threads/mlfqs/mlfqs-load-1
+FAIL tests/threads/mlfqs/mlfqs-load-60
+FAIL tests/threads/mlfqs/mlfqs-load-avg
+FAIL tests/threads/mlfqs/mlfqs-recent-1
+pass tests/threads/mlfqs/mlfqs-fair-2
+pass tests/threads/mlfqs/mlfqs-fair-20
+FAIL tests/threads/mlfqs/mlfqs-nice-2
+FAIL tests/threads/mlfqs/mlfqs-nice-10
+FAIL tests/threads/mlfqs/mlfqs-block
+8 of 27 tests failed.
+->
+FAIL tests/threads/priority-condvar
+이것만 남음
+
+# 와 이건 진짜 뭔 ?? 퇴물 검색
+pass tests/threads/alarm-single
+pass tests/threads/alarm-multiple
+pass tests/threads/alarm-simultaneous
+pass tests/threads/alarm-priority
+pass tests/threads/alarm-zero
+pass tests/threads/alarm-negative
+pass tests/threads/priority-change
+pass tests/threads/priority-donate-one
+pass tests/threads/priority-donate-multiple
+pass tests/threads/priority-donate-multiple2
+pass tests/threads/priority-donate-nest
+pass tests/threads/priority-donate-sema
+pass tests/threads/priority-donate-lower
+pass tests/threads/priority-fifo
+pass tests/threads/priority-preempt
+pass tests/threads/priority-sema
+pass tests/threads/priority-condvar
+pass tests/threads/priority-donate-chain
+FAIL tests/threads/mlfqs/mlfqs-load-1
+FAIL tests/threads/mlfqs/mlfqs-load-60
+FAIL tests/threads/mlfqs/mlfqs-load-avg
+FAIL tests/threads/mlfqs/mlfqs-recent-1
+pass tests/threads/mlfqs/mlfqs-fair-2
+pass tests/threads/mlfqs/mlfqs-fair-20
+FAIL tests/threads/mlfqs/mlfqs-nice-2
+FAIL tests/threads/mlfqs/mlfqs-nice-10
+FAIL tests/threads/mlfqs/mlfqs-block
+7 of 27 tests failed.
+

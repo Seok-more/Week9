@@ -376,12 +376,12 @@ bool sort_thread_ticks(struct list_elem *a, struct list_elem *b)
 	struct thread *thread_a = list_entry(a, struct thread, elem);
 	struct thread *thread_b = list_entry(b, struct thread, elem);
 	
-	if (thread_a->ticks_awake == thread_b->ticks_awake)
-	{
-		// Warning : FIFO 구조 해치고 있긴함
-		return thread_a->tid < thread_b->tid; // ticks가 같으면 tid 값으로 정렬 -> 테스트 조건에 안맞을 수도
-		// return 0; -> FIFO
-	}  
+	// if (thread_a->ticks_awake == thread_b->ticks_awake)
+	// {
+	// 	// Warning : FIFO 구조 해치고 있긴함
+	// 	return thread_a->tid < thread_b->tid; // ticks가 같으면 tid 값으로 정렬 -> 테스트 조건에 안맞을 수도
+	// 	// return 0; -> FIFO
+	// }  
 	
 	return thread_a->ticks_awake < thread_b->ticks_awake;
 }
@@ -434,7 +434,7 @@ bool sort_thread_priority(struct list_elem *a, struct list_elem *b)
 	// Error
 	// tid 순으로 살리는 방법 X -> 테스트는 FIFO를 요구함 
 	if (thread_a->priority == thread_b->priority)
-	{
+	{	
 		//return thread_a->tid > thread_b->tid;
 		return 0;
 	}  
@@ -454,8 +454,7 @@ void thread_swap_prior(void)
 
 	//printf("[PS_basic] thread_swap_prior: now(%s, priority=%d, tid=%d), ready(%s, priority=%d, tid=%d)\n",now->name, now->priority, now->tid,ready->name, ready->priority, ready->tid);
 
-
-	if (now->priority < ready->priority)
+	if (now->priority < ready->priority || (now->priority == ready->priority && now != ready))
 	{
 		//printf("[PS_basic] thread_swap_prior: now->priority < ready->priority, yielding...\n");
 
@@ -476,8 +475,12 @@ void thread_swap_prior(void)
 void thread_set_priority (int new_priority) 
 {
 	struct thread *now = thread_current();
-	now->priority = new_priority;
+	// 아 이거때문인가
+	//now->priority = new_priority; 
+	now->priority_original  = new_priority;
+
 	update_priority(now);
+
 	thread_swap_prior();
 
 }
@@ -583,7 +586,7 @@ init_thread (struct thread *t, const char *name, int priority)
 	// 여기추가
 	t->priority_original = priority;
 	t->lock_donated_for_waiting = NULL;
-	list_init(&t->lst_donation);
+	list_init(&(t->lst_donation));
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
