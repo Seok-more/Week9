@@ -55,6 +55,9 @@ void cond_broadcast (struct condition *, struct lock *);
 // 여기추가
 bool sort_sema_priority(struct list_elem *a, struct list_elem *b);
 bool sort_donation_priority(struct list_elem *a, struct list_elem *b);
+void donate(struct thread *now, struct thread *holder);
+void remove_donation(struct thread *now, struct lock *lock);
+void update_priority(struct thread *now);
 
 /* Optimization barrier.
  *

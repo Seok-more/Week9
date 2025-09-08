@@ -350,8 +350,6 @@ void thread_sleep(int64_t ticks)
 {
 	ASSERT(!intr_context()); // 인터럽트 핸들러에서 부르면 오류
 
-	struct thread *now;
-
 	enum intr_level old_level;
 	old_level = intr_disable(); // 인터럽트 해제 -> Race Condition 막아서 sleep_list에 안전접근 
 
@@ -479,6 +477,7 @@ void thread_set_priority (int new_priority)
 {
 	struct thread *now = thread_current();
 	now->priority = new_priority;
+	update_priority(now);
 	thread_swap_prior();
 
 }
@@ -583,6 +582,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
 	// 여기추가
 	t->priority_original = priority;
+	t->lock_donated_for_waiting = NULL;
 	list_init(&t->lst_donation);
 }
 

@@ -137,7 +137,7 @@ void sema_up (struct semaphore *sema)
 
 		// struct thread *t = list_entry (list_front (&sema->waiters),struct thread, elem);
 		// printf("[sema_up] Unblock thread: %s (priority: %d)\n", t->name, t->priority);
-
+		list_sort(&sema->waiters, sort_thread_priority, NULL);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),struct thread, elem));
 	}
 	
@@ -223,16 +223,17 @@ void lock_acquire (struct lock *lock)
 
 	struct thread *now = thread_current();
 	
-	if (lock->holder && lock->holder->priority < now->priority)
+	if (lock->holder /*&& lock->holder->priority < now->priority*/)
 	{
-		// 일단 임시
-		lock->holder->priority = now->priority;
-
 		now->lock_donated_for_waiting = lock;
 		list_insert_ordered(&lock->holder->lst_donation, &now->lst_donation_elem, sort_donation_priority,NULL);
 		
+		// 일단 임시
+		//lock->holder->priority = now->priority;
+		donate(now, lock->holder);
 	}
 	sema_down (&lock->semaphore);
+	now->lock_donated_for_waiting = NULL;
 	lock->holder = now;
 }
 
@@ -270,27 +271,30 @@ lock_release (struct lock *lock)
 	struct thread *now = thread_current();
 
 	// 일단 임시
-	struct list_elem *it = list_begin(&now->lst_donation);
+	// struct list_elem *it = list_begin(&now->lst_donation);
 
-    while (it != list_end(&now->lst_donation)) 
-	{
-        struct thread *donor = list_entry(it, struct thread, lst_donation_elem);
-        if (donor->lock_donated_for_waiting == lock) 
-		{
-            // 삭제 후 lock_donated_for_waiting 초기화
-            it = list_remove(it);
-            donor->lock_donated_for_waiting = NULL;
-        } 
-		else
-		{
-            it = list_next(it);
-        }
-    }
+    // while (it != list_end(&now->lst_donation)) 
+	// {
+    //     struct thread *donor = list_entry(it, struct thread, lst_donation_elem);
+    //     if (donor->lock_donated_for_waiting == lock) 
+	// 	{
+    //         // 삭제 후 lock_donated_for_waiting 초기화
+    //         it = list_remove(it);
+    //         donor->lock_donated_for_waiting = NULL;
+    //     } 
+	// 	else
+	// 	{
+    //         it = list_next(it);
+    //     }
+    // }
 
-    if (list_empty(&now->lst_donation))
-    {
-		now->priority = now->priority_original;
-	}
+    // if (list_empty(&now->lst_donation))
+    // {
+	// 	now->priority = now->priority_original;
+	// }
+
+	remove_donation(now, lock);
+	update_priority(now);
 
 	lock->holder = NULL;
 	sema_up (&lock->semaphore);
@@ -407,6 +411,7 @@ void cond_signal (struct condition *cond, struct lock *lock UNUSED)
 		// 	printf("[cond_signal] Signal: Unblock EMPTY (no thread)\n");
 		// }
 
+		list_sort(&cond->waiters, sort_sema_priority, NULL);
 		sema_up (&list_entry (list_pop_front (&cond->waiters),struct semaphore_elem, elem)->semaphore);
 	}
 }
@@ -449,4 +454,52 @@ bool sort_donation_priority(struct list_elem *a, struct list_elem *b)
 
 	return thread_a->priority > thread_b->priority;
 
+}
+
+void donate(struct thread *now, struct thread *holder)
+{
+	// 중첩 우선순위 한계 8로 하래
+	for (int i = 0; i < 8; i++)
+	{
+		// 이제 중첩 안됨
+		if (!now->lock_donated_for_waiting) return;
+
+		holder = now->lock_donated_for_waiting->holder;
+		holder->priority = now->priority;
+		now = holder;
+	}
+}
+
+// now의 lst_donation에서 현재 lock을 요청한 쓰레드를 탐색, 제거
+void remove_donation(struct thread *now, struct lock *lock)
+{
+	if (list_empty(&now->lst_donation)) return;
+
+	struct list_elem *it = list_front(&now->lst_donation);
+
+	while (it != list_end(&now->lst_donation))
+	{
+		struct thread *thread_it = list_entry(it, struct thread, lst_donation_elem);
+		struct list_elem *next = list_next(it);
+
+		if (thread_it->lock_donated_for_waiting == lock)
+		{
+			list_remove(&thread_it->lst_donation_elem);
+		}
+
+		it = next;
+	}
+}
+
+// 반환한 lock으로 인해 바뀐 우선순위 적용
+void update_priority(struct thread *now)
+{
+	if (list_empty(&now->lst_donation))
+	{
+		now->priority = now->priority_original;
+		return;
+	}
+
+	// 정렬된 리스트 맨 앞에 있는 우선순위로 갱신함
+	now->priority = list_entry(list_front(&now->lst_donation), struct thread, lst_donation_elem)->priority;
 }

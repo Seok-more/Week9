@@ -7,7 +7,7 @@ The manual is available at https://casys-kaist.github.io/pintos-kaist/.
 pintos -- -q run alarm-multiple
 
 jungle@a6412c5c73e2:/workspaces/pintos_22.04_lab_docker/pintos/threads/build$ 
-make tests/threads/priority-sema.result
+make tests/threads/priority-donate-chain.result
 
 ## **얼마나 많은     코드를 작성해야 하나요?**
 - 참고 솔루션에서 `git diff --stat`로 계산한 결과:
@@ -303,3 +303,40 @@ priority-donate-one, priority-donate-multiple2
 priority-fifo, 
 priority-sema,
 priority-condvar 
+
+# 중첩된 PD 추가  처리
+Translation of call stack:
+pass tests/threads/alarm-single
+pass tests/threads/alarm-multiple
+pass tests/threads/alarm-simultaneous
+pass tests/threads/alarm-priority
+pass tests/threads/alarm-zero
+pass tests/threads/alarm-negative
+FAIL tests/threads/priority-change
+pass tests/threads/priority-donate-one
+pass tests/threads/priority-donate-multiple
+pass tests/threads/priority-donate-multiple2
+pass tests/threads/priority-donate-nest
+pass tests/threads/priority-donate-sema
+FAIL tests/threads/priority-donate-lower
+FAIL tests/threads/priority-fifo
+pass tests/threads/priority-preempt
+FAIL tests/threads/priority-sema
+FAIL tests/threads/priority-condvar
+FAIL tests/threads/priority-donate-chain
+FAIL tests/threads/mlfqs/mlfqs-load-1
+FAIL tests/threads/mlfqs/mlfqs-load-60
+FAIL tests/threads/mlfqs/mlfqs-load-avg
+FAIL tests/threads/mlfqs/mlfqs-recent-1
+pass tests/threads/mlfqs/mlfqs-fair-2
+pass tests/threads/mlfqs/mlfqs-fair-20
+FAIL tests/threads/mlfqs/mlfqs-nice-2
+FAIL tests/threads/mlfqs/mlfqs-nice-10
+FAIL tests/threads/mlfqs/mlfqs-block
+13 of 27 tests failed.
+->
+priority-donate-multiple,
+priority-donate-nest,
+priority-donate-sema가 추가로 통과
+
+priority-change가 실패함

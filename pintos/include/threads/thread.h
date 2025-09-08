@@ -101,7 +101,7 @@ struct thread {
 	int priority_original; // 원래 우선순위
 	struct list lst_donation; // 이 쓰레드에게 기부 해준 쓰레드들 저장
 	struct list_elem lst_donation_elem; // 기부자들 노드
-	struct lock *lock_donated_for_waiting;
+	struct lock *lock_donated_for_waiting; // 이 쓰레드가 무슨 락을 대기하고있는지
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
