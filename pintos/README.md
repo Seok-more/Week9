@@ -442,4 +442,8 @@ FAIL tests/threads/mlfqs/mlfqs-block
 ->
 mlfqs-nice-2, 10 추가 통과
 
+
 make tests/threads/mlfqs/mlfqs-load-1.result
+
+main이 dying 상태가 되어도 계속 running으로 복귀 → load_avg가 떨어지지 않음
+main을 제대로 dying 시키고, ready_list/all_list에서 제거, schedule에서 idle로 제대로 넘어가게 수정 필요!

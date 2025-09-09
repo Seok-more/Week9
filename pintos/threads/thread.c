@@ -896,8 +896,18 @@ void mlfqs_update_load_avg()
 		ready_threads++;
 	}
 
-    //printf("[DEBUG] TICK %lld: ready_threads=%d, running=%s\n", timer_ticks(), ready_threads, thread_current()->name);
-    
+	// 디버깅
+    printf("[DEBUG] TICK %lld: ready_threads=%d, running=%s(%d)\n", timer_ticks(), ready_threads, thread_current()->name, thread_current()->status);
+
+	printf("[DEBUG] READY_LIST: ");
+	for (it = list_begin(&ready_list); it != list_end(&ready_list); it = list_next(it)) 
+	{
+    	struct thread *t = list_entry(it, struct thread, elem);
+   	 printf("%s(%d) ", t->name, t->status); // 이름과 상태까지
+	}
+	printf("\n");
+	// 디버깅
+
 	load_avg = add(mul(div(int2fp(59), int2fp(60)), load_avg),mul(div(int2fp(1), int2fp(60)), int2fp(ready_threads)));
 }
 
