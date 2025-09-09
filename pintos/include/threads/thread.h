@@ -103,6 +103,13 @@ struct thread {
 	struct list_elem lst_donation_elem; // 기부자들 노드
 	struct lock *lock_donated_for_waiting; // 이 쓰레드가 무슨 락을 대기하고있는지
 
+	// mlfqs
+	int64_t recent_cpu; // 최근 CPU 사용량 -> fixed-point써야함
+	int nice; // 나이스값 0 -> -20 ~ 20
+	struct list_elem all_elem;
+
+
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -150,6 +157,13 @@ void thread_awake (int64_t ticks);
 bool sort_thread_priority(struct list_elem *a, struct list_elem *b);
 void thread_swap_prior(void);
 
+// mlfqs
+extern int64_t load_avg; // 시스템 전체 부하의 평균
+int64_t mlfqs_cal_priority(int64_t recent_cpu, int nice);
+void mlfqs_update_load_avg(void);
+void mlfqs_update_all_recent_cpu(void);
+
+
 int thread_get_priority (void);
 void thread_set_priority (int new_priority);
 
@@ -159,5 +173,7 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+
 
 #endif /* threads/thread.h */
