@@ -216,32 +216,28 @@ lock_init (struct lock *lock) {
 // 락을 획득(lock acquire)하는 함수
 // 즉, 여러 스레드가 공유 자원을 사용할 때
 // 한 번에 하나의 스레드만 접근하도록 하는 "상호배제(Mutual Exclusion)"를 보장합니다.
-void lock_acquire(struct lock *lock) 
+void lock_acquire (struct lock *lock) 
 {
-    ASSERT(lock != NULL);
-    ASSERT(!intr_context());
-    ASSERT(!lock_held_by_current_thread(lock));
+	ASSERT (lock != NULL);
+	ASSERT (!intr_context ());
+	ASSERT (!lock_held_by_current_thread (lock));
 
-    // mlfqs가 꺼져있을 때만 priority donation 동작
-    if (!thread_mlfqs) 
+	struct thread *now = thread_current();
+	
+	if (lock->holder /*&& lock->holder->priority < now->priority*/)
 	{
-        struct thread *now = thread_current();
-        if (lock->holder) 
-		{
-            now->lock_donated_for_waiting = lock;
-            list_insert_ordered(&lock->holder->lst_donation, &now->lst_donation_elem, sort_donation_priority, NULL);
-            donate(now, lock->holder);
-        }
-    }
-    sema_down(&lock->semaphore);
-
-    // lock의 holder는 무조건 현재 스레드로 갱신 (mlfqs 여부와 관계없음)
-    lock->holder = thread_current();
-
-    if (!thread_mlfqs)
-    {
-		thread_current()->lock_donated_for_waiting = NULL;
+		now->lock_donated_for_waiting = lock;
+		list_insert_ordered(&lock->holder->lst_donation, &now->lst_donation_elem, sort_donation_priority,NULL);
+		
+		// 일단 임시
+		//lock->holder->priority = now->priority;
+		donate(now, lock->holder);
 	}
+	sema_down (&lock->semaphore);
+	now->lock_donated_for_waiting = NULL;
+
+	// 바꼈을수 있음
+	lock->holder = thread_current();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -259,7 +255,6 @@ lock_try_acquire (struct lock *lock) {
 
 	success = sema_try_down (&lock->semaphore);
 	if (success)
-
 		lock->holder = thread_current ();
 	return success;
 }
@@ -270,21 +265,42 @@ lock_try_acquire (struct lock *lock) {
    An interrupt handler cannot acquire a lock, so it does not
    make sense to try to release a lock within an interrupt
    handler. */
-void lock_release(struct lock *lock) 
+void
+lock_release (struct lock *lock) 
 {
-    ASSERT(lock != NULL);
-    ASSERT(lock_held_by_current_thread(lock));
+	ASSERT (lock != NULL);
+	ASSERT (lock_held_by_current_thread (lock));
 
-    // lock의 holder는 항상 NULL로 세팅 (mlfqs 여부와 관계없음)
-    lock->holder = NULL;
+	struct thread *now = thread_current();
 
-    // mlfqs가 꺼져있을 때만 donation 관련 코드
-    if (!thread_mlfqs) 
-	{
-        remove_donation(thread_current(), lock);
-        update_priority(thread_current());
-    }
-    sema_up(&lock->semaphore);
+	// 일단 임시
+	// struct list_elem *it = list_begin(&now->lst_donation);
+
+    // while (it != list_end(&now->lst_donation)) 
+	// {
+    //     struct thread *donor = list_entry(it, struct thread, lst_donation_elem);
+    //     if (donor->lock_donated_for_waiting == lock) 
+	// 	{
+    //         // 삭제 후 lock_donated_for_waiting 초기화
+    //         it = list_remove(it);
+    //         donor->lock_donated_for_waiting = NULL;
+    //     } 
+	// 	else
+	// 	{
+    //         it = list_next(it);
+    //     }
+    // }
+
+    // if (list_empty(&now->lst_donation))
+    // {
+	// 	now->priority = now->priority_original;
+	// }
+
+	remove_donation(now, lock);
+	update_priority(now);
+
+	lock->holder = NULL;
+	sema_up (&lock->semaphore);
 }
 
 /* Returns true if the current thread holds LOCK, false

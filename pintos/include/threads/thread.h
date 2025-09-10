@@ -103,11 +103,6 @@ struct thread {
 	struct list_elem lst_donation_elem; // 기부자들 노드
 	struct lock *lock_donated_for_waiting; // 이 쓰레드가 무슨 락을 대기하고있는지
 
-	// mlfqs
-	int nice;
-	int recent_cpu;
-	struct list_elem all_elem; 
-
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -128,7 +123,6 @@ struct thread {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
-
 
 void thread_init (void);
 void thread_start (void);
@@ -165,13 +159,5 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
-
-// mlfqs
-void mlfqs_priority(struct thread* t);
-void mlfqs_recent_cpu(struct thread *t);
-void mlfqs_load_avg(void);
-void mlfqs_increase_cpu(void);
-void mlfqs_update_recent_cpu(void);
-void mlfqs_update_priority(void);
 
 #endif /* threads/thread.h */
