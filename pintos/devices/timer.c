@@ -131,6 +131,21 @@ static void timer_interrupt (struct intr_frame *args UNUSED)
 	ticks++;
 	thread_tick (); // -> 현재 쓰레드의 틱 갱신하는거임
 
+	if (thread_mlfqs) 
+	{
+		mlfqs_increase_cpu();
+		if (!(ticks % 4)) 
+		{
+			mlfqs_update_priority();
+
+			if (!(ticks % TIMER_FREQ)) 
+			{
+				mlfqs_load_avg();
+				mlfqs_update_recent_cpu();
+			}
+		}
+    }
+
 	//printf("[AlarmClock] timer_interrupt: tick %lld\n", ticks);
 	thread_awake(ticks); // 쓰레드 깨워야지
 }
