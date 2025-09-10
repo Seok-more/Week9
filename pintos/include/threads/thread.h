@@ -9,6 +9,10 @@
 #include "vm/vm.h"
 #endif
 
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -104,7 +108,7 @@ struct thread {
 	struct lock *lock_donated_for_waiting; // 이 쓰레드가 무슨 락을 대기하고있는지
 
 	// mlfqs
-	int nice;
+	int niceness;
 	int recent_cpu;
 	struct list_elem all_elem; 
 
@@ -167,10 +171,9 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 
 // mlfqs
-void mlfqs_priority(struct thread* t);
+void mlfqs_priority(struct thread *t);
 void mlfqs_recent_cpu(struct thread *t);
 void mlfqs_load_avg(void);
-void mlfqs_increase_cpu(void);
 void mlfqs_update_recent_cpu(void);
 void mlfqs_update_priority(void);
 

@@ -133,11 +133,10 @@ static void timer_interrupt (struct intr_frame *args UNUSED)
 
 	if (thread_mlfqs) 
 	{
-		mlfqs_increase_cpu();
+		thread_current()->recent_cpu = add_n(thread_current()->recent_cpu, 1);
 		if (!(ticks % 4)) 
 		{
 			mlfqs_update_priority();
-
 			if (!(ticks % TIMER_FREQ)) 
 			{
 				mlfqs_load_avg();
@@ -172,7 +171,8 @@ too_many_loops (unsigned loops) {
    brief delays.
 
    Marked NO_INLINE because code alignment can significantly
-   affect timings, so that if this function was inlined
+   affect ti
+   ngs, so that if this function was inlined
    differently in different places the results would be difficult
    to predict. */
 static void NO_INLINE

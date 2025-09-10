@@ -507,11 +507,11 @@ int thread_get_priority (void)
 void thread_set_nice (int nice UNUSED) 
 {
 	/* TODO: Your implementation goes here */
-	struct thread *now = thread_current();
+	struct thread *t = thread_current();
 
     enum intr_level old_level = intr_disable();
-    now->nice = nice;
-    mlfqs_priority(now);
+    t->niceness = nice;
+    mlfqs_priority(t);
     intr_set_level(old_level);
 }
 
@@ -519,10 +519,10 @@ void thread_set_nice (int nice UNUSED)
 int thread_get_nice (void) 
 {
 	/* TODO: Your implementation goes here */
-	struct thread *now = thread_current();
+	 struct thread *t = thread_current();
 
     enum intr_level old_level = intr_disable();
-    int nice = now->nice;
+    int nice = t->niceness;
     intr_set_level(old_level);
 
     return nice;
@@ -533,20 +533,20 @@ int thread_get_load_avg (void)
 {
 	/* TODO: Your implementation goes here */
 	enum intr_level old_level = intr_disable();
-    int load_avg = fp_to_int_round(mult_n(load_avg, 100));  
+    int load_avg_val = fp_to_int_round(mult_n(load_avg, 100));  
     intr_set_level(old_level);
 
-    return load_avg;
+    return load_avg_val;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int thread_get_recent_cpu (void) 
 {
 	/* TODO: Your implementation goes here */
-	struct thread *now = thread_current();
+	struct thread *t = thread_current();
 
     enum intr_level old_level = intr_disable();
-    int recent_cpu = fp_to_int_round(mult_n(now->recent_cpu, 100)); 
+    int recent_cpu = fp_to_int_round(mult_n(t->recent_cpu, 100)); 
     intr_set_level(old_level);
 
     return recent_cpu;
@@ -603,8 +603,7 @@ kernel_thread (thread_func *function, void *aux) {
 /* Does basic initialization of T as a blocked thread named
    NAME. */
 // 새 쓰레드 구조체 초기화 -> 새로운 쓰레드 객체 만든다고 보면됨
-static void
-init_thread (struct thread *t, const char *name, int priority) 
+static void init_thread (struct thread *t, const char *name, int priority) 
 {
 	ASSERT (t != NULL);
 	ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
@@ -624,7 +623,6 @@ init_thread (struct thread *t, const char *name, int priority)
 	{
         t->priority = priority;
     }
-
 	t->magic = THREAD_MAGIC;
 
 	// 여기추가
@@ -632,7 +630,7 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->lock_donated_for_waiting = NULL;
 	list_init(&(t->lst_donation));
 
-	t->nice = 0;
+	t->niceness = 0;
     t->recent_cpu = 0;
 
 }
@@ -821,14 +819,14 @@ void mlfqs_priority (struct thread *t)
 {
     if (t == idle_thread) return;
 
-    t->priority = fp_to_int(add_n(div_n(t->recent_cpu, -4), PRI_MAX - t->nice * 2));
+    t->priority = fp_to_int(add_n(div_n(t->recent_cpu, -4), PRI_MAX - t->niceness * 2));
 }
 
 void mlfqs_recent_cpu (struct thread *t) 
 {
     if (t == idle_thread) return;
 
-    t->recent_cpu = add_n(mult_fp(div_fp(mult_n(load_avg, 2), add_n(mult_n(load_avg, 2), 1)), t->recent_cpu), t->nice);
+    t->recent_cpu = add_n(mult_fp(div_fp(mult_n(load_avg, 2), add_n(mult_n(load_avg, 2), 1)), t->recent_cpu), t->niceness);
 }
 
 void mlfqs_load_avg (void) 
@@ -836,18 +834,11 @@ void mlfqs_load_avg (void)
     int ready_threads = list_size(&ready_list);
 
     if (thread_current() != idle_thread)
-    { 
+    {
 		ready_threads++;
 	}
 
     load_avg = add_fp(mult_fp(div_fp(int_to_fp(59), int_to_fp(60)), load_avg), mult_n(div_fp(int_to_fp(1), int_to_fp(60)), ready_threads));
-}
-
-void mlfqs_increase_cpu (void) 
-{
-    if (thread_current() == idle_thread) return;
-
-    thread_current()->recent_cpu = add_n(thread_current()->recent_cpu, 1);
 }
 
 void mlfqs_update_recent_cpu (void) 
